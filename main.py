@@ -725,7 +725,6 @@ if __name__ == '__main__':
 
         with open(os.path.join(Config.results_dir, "plan.json"), "w") as f:
             json.dump(val_res, f, indent=4)
-        return val_res
 
     logging.critical("Failed to create valid plan")
     sys.exit(0)
