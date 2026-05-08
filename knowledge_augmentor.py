@@ -15,19 +15,32 @@ class KnowledgeAugmentor:
     """
     def __init__(self, db_dir="vector_db", collection_name="rf_knowledge", model_name="all-MiniLM-L6-v2"):
         logging.info("Initializing KnowledgeAugmentor...")
-        sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=model_name)
-        db_client = chromadb.PersistentClient(path=db_dir)
-        self.collection = db_client.get_collection(name=collection_name, embedding_function=sentence_transformer_ef)
+        self.collection = None
+        try:
+            sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=model_name)
+            db_client = chromadb.PersistentClient(path=db_dir)
+            self.collection = db_client.get_or_create_collection(
+                name=collection_name, embedding_function=sentence_transformer_ef
+            )
+        except Exception as e:
+            logging.warning(f"KnowledgeAugmentor initialization failed (will proceed without RAG): {e}")
         logging.info("KnowledgeAugmentor initialized.")
 
     # component-filtered retrieval to avoid mixing unrelated docs
     def retrieve_context_for_component(self, component: str, query: str, n_results: int = 3) -> str:
+        if self.collection is None:
+            logging.warning("[KnowledgeAugmentor] No collection available (init failed), skipping retrieval.")
+            return ""
         logging.info(f"[KnowledgeAugmentor] Retrieving context for component='{component}' | query='{query}'")
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=n_results,
-            where={"component": component}  # metadata filter ensures only relevant files are used
-        )
+        try:
+            results = self.collection.query(
+                query_texts=[query],
+                n_results=n_results,
+                where={"component": component}
+            )
+        except Exception as e:
+            logging.warning(f"[KnowledgeAugmentor] Query failed: {e}")
+            return ""
         docs = results.get('documents', [[]])[0] if results else []
         if not docs:
             return ""
