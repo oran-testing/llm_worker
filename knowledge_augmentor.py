@@ -1,4 +1,7 @@
+import json
 import logging
+from typing import Dict, Any, Optional
+
 import chromadb
 from chromadb.utils import embedding_functions
 
@@ -39,17 +42,22 @@ class KnowledgeAugmentor:
         return "\n\n".join(ctx).strip()
 
     @staticmethod
-    def build_augmented_prompt(context: str, system_prompt_block: str, user_request: str) -> str:
+    def build_augmented_prompt(context: str, system_prompt_block: str, user_request: str,
+                               planner_params: Optional[Dict[str, Any]] = None) -> str:
         """
         Structured prompt used consistently across components.
         - Context: retrieved engineering rules/examples
         - Instructions: the schema/formatting portion of the system prompt
         - User Request: the actual user input/goal
-        (staticmethod: this function does not depend on instance or class state)
+        - Planner Parameters: authoritative constraints from the planner when present
         """
+        params_block = ""
+        if planner_params:
+            params_block = f"\n--- PLANNER PARAMETERS (Authoritative) ---\n{json.dumps(planner_params, indent=2)}\n--- END OF PLANNER PARAMETERS ---\n"
         return f"""You are an expert RF systems assistant.
 First, review the provided CONTEXT for critical engineering rules.
 Then, use that context to follow the INSTRUCTIONS to generate a valid JSON configuration that fulfills the USER REQUEST.
+If PLANNER PARAMETERS are provided, you MUST honor them (they override defaults and inferred values).
 
 --- CONTEXT (Rules & Formulas) ---
 {context}
@@ -61,8 +69,7 @@ Then, use that context to follow the INSTRUCTIONS to generate a valid JSON confi
 
 --- USER REQUEST ---
 {user_request}
-
-Provide only the final JSON object.
+{params_block}Provide only the final JSON object.
 
 --- JSON OUTPUT ---""".strip()
 
