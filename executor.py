@@ -1,3 +1,5 @@
+import logging
+
 from llm_wrapper import LLMWrapper
 
 from config import Config
@@ -24,13 +26,14 @@ class Executor:
             return False, self.errors
 
         executor_prompt = Config.options.get("executor", None)
-        if not executor_prompt:
-            self.errors.append("Executor prompt required but not supplied")
-            return False, self.errors
 
         plan_prompt = f"User request: {plan_json.get('desc', '')}\nUse the following id: {plan_json.get('id','')}"
 
-        combined_prompt = f"{executor_prompt}\n\n{type_prompt}\n\n{plan_prompt}"
+        if executor_prompt:
+            combined_prompt = f"{executor_prompt}\n\n{type_prompt}\n\n{plan_prompt}"
+        else:
+            logging.warning("No 'executor' prompt in config, using type prompt directly")
+            combined_prompt = f"{type_prompt}\n\n{plan_prompt}"
 
         if errors:
             combined_prompt = f"{combined_prompt}\nERRORS ENCOUNTERED: {errors}"

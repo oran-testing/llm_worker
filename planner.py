@@ -7,9 +7,9 @@ class Planner:
         self.errors = []
 
     def generate_plan(self, errors=[]):
-        planner_prompt = Config.options.get("planner", None)
+        planner_prompt = Config.options.get("planner", None) or Config.options.get("plan_prompt", None)
         if not planner_prompt:
-            self.errors.append("No planner prompt in config")
+            self.errors.append("No planner/plan_prompt prompt in config")
             return False, self.errors
 
         user_prompt = Config.options.get("user_prompt", None)
