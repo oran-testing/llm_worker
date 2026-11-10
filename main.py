@@ -16,6 +16,7 @@ from jammer_validator import JammerValidator
 from plan_validator import PlanValidator
 from uu_agent_validator import UuagentValidator
 from sstorm_validator import SStormValidator
+from ofh_validator import OfhValidator
 
 from llm_wrapper import LLMWrapper
 from executor import Executor
@@ -659,6 +660,8 @@ if __name__ == '__main__':
                 current_validator = SnifferValidator()
             elif component_type == "uu_agent":
                 current_validator = UuagentValidator()
+            elif component_type == "ofh":
+                current_validator = OfhValidator()
             api_payload = run_exec_loop(executor, current_validator, plan_item)
             if plan_item.get("rf") == "b200":
                 api_payload["rf"] = {"type": "b200"}
